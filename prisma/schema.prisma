@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TestAdministrator {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+  email      String   @unique
+  name       String
+  password   String
+  about      String?
+  quizes     Quiz[]
+}
+
+model Option {
+  id         Int          @id @default(autoincrement())
+  option     String
+  is_correct Boolean
+  question   Question     @relation(fields: [questionId], references: [id])
+  questionId Int
+  QuizAnswer QuizAnswer[]
+}
+
+model Question {
+  id         Int          @id @default(autoincrement())
+  text       String
+  options    Option[]
+  Quiz       Quiz?        @relation(fields: [quizId], references: [id])
+  quizId     Int?
+  QuizAnswer QuizAnswer[]
+}
+
+model Quiz {
+  id                  Int                @id @default(autoincrement())
+  title               String
+  description         String
+  instructions        String
+  duration            Int
+  date                String
+  is_completed        Boolean
+  is_published        Boolean
+  participants        Participant[]
+  questions           Question[]
+  results             QuizResult[]
+  TestAdministrator   TestAdministrator? @relation(fields: [testAdministratorId], references: [id])
+  testAdministratorId Int?
+}
+
+model Participant {
+  id                 Int          @id @default(autoincrement())
+  application_number String
+  name               String
+  email              String
+  Quiz               Quiz?        @relation(fields: [quizId], references: [id])
+  quizId             Int?
+  QuizAnswer         QuizAnswer[]
+  QuizResult         QuizResult[]
+}
+
+model QuizAnswer {
+  id             Int         @id @default(autoincrement())
+  quiz_id        Int
+  participant_id Int
+  question_id    Int
+  option_id      Int
+  is_correct     Boolean
+  participant    Participant @relation(fields: [participant_id], references: [id])
+  question       Question    @relation(fields: [question_id], references: [id])
+  option         Option      @relation(fields: [option_id], references: [id])
+  QuizResult     QuizResult? @relation(fields: [quizResultId], references: [id])
+  quizResultId   Int?
+}
+
+model QuizResult {
+  id             Int          @id @default(autoincrement())
+  participant_id Int
+  participant    Participant  @relation(fields: [participant_id], references: [id])
+  quiz           Quiz         @relation(fields: [quizId], references: [id])
+  quizId         Int
+  answers        QuizAnswer[]
+}
