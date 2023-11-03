@@ -15,6 +15,7 @@ import {
   deleteQuiz,
   getQuizWithAnswers, // Added the new handler for retrieving quiz with answers
 } from "./handlers/quizHandler";
+import { extractText } from "./handlers/fileHandler";
 
 const router = Router();
 
@@ -33,5 +34,7 @@ router.put("/quizzes/:quizId", updateQuiz); // Update a quiz
 router.put("/quizzes/:quizId/publish", publishQuiz); // Publish a quiz
 router.put("/quizzes/:quizId/unpublish", unpublishQuiz); // Unpublish a quiz
 router.delete("/quizzes/:quizId", deleteQuiz); // Delete a quiz
+
+//file routes
 
 export default router;
