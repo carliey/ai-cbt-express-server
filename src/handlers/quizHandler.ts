@@ -1,4 +1,51 @@
+import { trimTextToToken } from "../helpers/trimTextToToken";
 import prisma from "../modules/db";
+import openAI from "../modules/openAI";
+
+// generate questions
+
+export const generateQuestions = async (req, res) => {
+  try {
+    const text = req.body.text;
+    const number_of_questions = req.body.number_of_questions;
+    const difficulty_level = req.body.difficulty_level;
+    if (!text || !number_of_questions || !difficulty_level) {
+      return res.status(400).json({ error: { message: "Missing parameters" } });
+    }
+
+    const trimmedText = trimTextToToken(text, 400);
+
+    const prompt = `Generate ${number_of_questions} multiple choice questions, with difficulty level ${difficulty_level} on a scale of 1 to 5 from this text ${trimmedText}. 
+    The response should strictly be in the following parsable JSON format:
+    An array of questions, each question is an object containing a "text" key which holds the question itself. 
+    Additionally, there's an "options" array within each question object. 
+    The "options" array contains four objects, each representing a possible answer to the question,
+    Every option object includes an "option" key for the text of the answer and an "is_correct" key, 
+    which is a boolean value indicating whether the given option is the correct answer (true) or not (false), 
+    the correct option should be randomized at different index of the options array for every question
+    `;
+
+    const result = await openAI.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-3.5-turbo",
+    });
+
+    const questions = JSON.parse(result.choices[0].message.content);
+    if (questions) {
+      return res.status(200).json({ data: questions });
+    } else {
+      return res
+        .status(403)
+        .json({ error: "too many requests, please try again" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      error,
+      message: "something went wrong, please try again later",
+    });
+  }
+};
 
 // Create a new quiz
 export const createQuiz = async (req, res) => {
@@ -12,7 +59,7 @@ export const createQuiz = async (req, res) => {
         date: req.body.date,
         is_completed: false,
         is_published: false,
-        testAdministratorId: req.user.id, // Assuming you have user authentication
+        testAdministratorId: req.user.id,
         questions: {
           // Create questions and their options
           create: req.body.questions.map((question) => {
@@ -41,7 +88,7 @@ export const createQuiz = async (req, res) => {
     res.json({ data: newQuiz, message: "Quiz created successfully" });
   } catch (error) {
     console.log(error);
-    res.json({ error });
+    res.status(403).json({ error });
   }
 };
 
