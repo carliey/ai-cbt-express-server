@@ -1,6 +1,8 @@
+import { error } from "console";
 import { trimTextToToken } from "../helpers/trimTextToToken";
 import prisma from "../modules/db";
 import openAI from "../modules/openAI";
+import { exclude } from "../helpers/exclude";
 
 // generate questions
 
@@ -108,7 +110,9 @@ export const getQuizzes = async (req, res) => {
         },
       },
     });
-    res.json({ data: quizzes, message: "Quizzes fetched successfully" });
+    res
+      .status(200)
+      .json({ data: quizzes, message: "Quizzes fetched successfully" });
   } catch (error) {
     console.log(error);
     res.json({ error });
@@ -158,6 +162,66 @@ export const getQuizWithAnswers = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.json({ error });
+  }
+};
+
+// Get a particular quiz for a particular participant
+export const getParticipantQuiz = async (req, res) => {
+  const quiz_id = req.query.quiz_id;
+  const participant_id = req.query.participant_id;
+
+  if (!participant_id && !quiz_id) {
+    return res.status(403).json({ error: "missing url parameters" });
+  }
+
+  try {
+    const parsed_quiz_id = parseInt(quiz_id);
+    const parsed_participant_id = parseInt(participant_id);
+
+    console.log(parsed_participant_id, parsed_quiz_id);
+
+    const participant = await prisma.participant.findUnique({
+      where: {
+        id: parsed_participant_id,
+        quizId: parsed_quiz_id,
+      },
+      include: {
+        Quiz: {
+          include: {
+            questions: true,
+            TestAdministrator: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // const quiz = await prisma.quiz.findFirst({
+    //   where: {
+    //     id: parsed_quiz_id,
+    //     participants: {
+    //       some: {
+    //         id: parsed_participant_id,
+    //       },
+    //     },
+    //   },
+    //   include: {
+    //     questions: true,
+    //     TestAdministrator: true,
+    //   },
+    // });
+
+    res.status(200).json({
+      data: participant,
+      message: "Quiz fetched successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(403).json({ error });
   }
 };
 

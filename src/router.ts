@@ -14,7 +14,8 @@ import {
   unpublishQuiz,
   deleteQuiz,
   getQuizWithAnswers,
-  generateQuestions, // Added the new handler for retrieving quiz with answers
+  generateQuestions,
+  getParticipantQuiz, // Added the new handler for retrieving quiz with answers
 } from "./handlers/quizHandler";
 import { extractText } from "./handlers/fileHandler";
 
@@ -27,11 +28,11 @@ router.put("/profile/update", updateProfile);
 router.put("/profile/update-password", changePassword);
 
 // Quiz Routes
-router.post("/generate-questions", generateQuestions); // Create a new quiz
-router.post("/quizzes", createQuiz); // Create a new quiz
 router.get("/quizzes", getQuizzes); // Get all quizzes for the logged-in test administrator
 router.get("/quizzes/:quizId/answers", getQuizAnswers); // Get answers for a specific quiz
 router.get("/quizzes/:quizId", getQuizWithAnswers); // Get a quiz with its participant answers
+router.post("/generate-questions", generateQuestions); // Create a new quiz
+router.post("/quizzes", createQuiz); // Create a new quiz
 router.put("/quizzes/:quizId", updateQuiz); // Update a quiz
 router.put("/quizzes/:quizId/publish", publishQuiz); // Publish a quiz
 router.put("/quizzes/:quizId/unpublish", unpublishQuiz); // Unpublish a quiz
