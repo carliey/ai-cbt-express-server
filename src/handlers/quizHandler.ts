@@ -94,6 +94,110 @@ export const createQuiz = async (req, res) => {
   }
 };
 
+// Submit or update a participant answer
+export const submitAnswer = async (req, res) => {
+  try {
+    const { questionId, optionId, quizId, participantId } = req.body;
+    if (!questionId || !optionId || !quizId || !participantId) {
+      return res.status(400).json({ error: { message: "Missing parameters" } });
+    }
+
+    // Ensure the participant is associated with the quiz
+    const participant = await prisma.participant.findUnique({
+      where: {
+        id: participantId,
+        quizId: quizId,
+      },
+    });
+
+    if (!participant) {
+      return res
+        .status(404)
+        .json({ error: { message: "Participant not found for the quiz" } });
+    }
+
+    // Validate that the question and option exist
+    const question = await prisma.question.findUnique({
+      where: {
+        id: questionId,
+        quizId: quizId,
+      },
+    });
+
+    if (!question) {
+      return res
+        .status(404)
+        .json({ error: { message: "Question not found for the quiz" } });
+    }
+
+    const option = await prisma.option.findUnique({
+      where: {
+        id: optionId,
+        questionId: questionId,
+      },
+    });
+
+    if (!option) {
+      return res
+        .status(404)
+        .json({ error: { message: "Option not found for the question" } });
+    }
+
+    // Check if the participant has already answered this question
+    const existingAnswer = await prisma.quizAnswer.findFirst({
+      where: {
+        quiz_id: quizId,
+        participant_id: participantId,
+        question_id: questionId,
+      },
+    });
+
+    let submittedAnswer;
+
+    if (existingAnswer) {
+      // If the participant has already answered, update the existing answer
+      submittedAnswer = await prisma.quizAnswer.update({
+        where: {
+          id: existingAnswer.id,
+        },
+        data: {
+          option_id: optionId,
+          is_correct: option.is_correct,
+        },
+        include: {
+          participant: true,
+          question: true,
+          option: true,
+        },
+      });
+    } else {
+      // If the participant has not answered, create a new answer
+      submittedAnswer = await prisma.quizAnswer.create({
+        data: {
+          quiz_id: quizId,
+          participant_id: participantId,
+          question_id: questionId,
+          option_id: optionId,
+          is_correct: option.is_correct,
+        },
+        include: {
+          participant: true,
+          question: true,
+          option: true,
+        },
+      });
+    }
+
+    res.status(200).json({
+      data: submittedAnswer,
+      message: "Answer submitted or updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: { message: "Internal server error" } });
+  }
+};
+
 // Get all quizzes for the logged-in test administrator
 export const getQuizzes = async (req, res) => {
   try {
@@ -178,8 +282,6 @@ export const getParticipantQuiz = async (req, res) => {
     const parsed_quiz_id = parseInt(quiz_id);
     const parsed_participant_id = parseInt(participant_id);
 
-    console.log(parsed_participant_id, parsed_quiz_id);
-
     const participant = await prisma.participant.findUnique({
       where: {
         id: parsed_participant_id,
@@ -188,7 +290,11 @@ export const getParticipantQuiz = async (req, res) => {
       include: {
         Quiz: {
           include: {
-            questions: true,
+            questions: {
+              include: {
+                options: true,
+              },
+            },
             TestAdministrator: {
               select: {
                 name: true,
@@ -199,21 +305,6 @@ export const getParticipantQuiz = async (req, res) => {
         },
       },
     });
-
-    // const quiz = await prisma.quiz.findFirst({
-    //   where: {
-    //     id: parsed_quiz_id,
-    //     participants: {
-    //       some: {
-    //         id: parsed_participant_id,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     questions: true,
-    //     TestAdministrator: true,
-    //   },
-    // });
 
     res.status(200).json({
       data: participant,
