@@ -3,6 +3,8 @@ import { trimTextToToken } from "../helpers/trimTextToToken";
 import prisma from "../modules/db";
 import openAI from "../modules/openAI";
 import { exclude } from "../helpers/exclude";
+import { transporter } from "../modules/mailer";
+import { createEmailTemplate } from "../helpers/emailTemplates";
 
 // generate questions
 
@@ -359,6 +361,37 @@ export const updateQuiz = async (req, res) => {
 export const publishQuiz = async (req, res) => {
   try {
     const quizId = parseInt(req.params.quizId);
+
+    const quiz = await prisma.quiz.findFirst({
+      where: {
+        id: quizId,
+      },
+      include: {
+        participants: true,
+        TestAdministrator: true,
+      },
+    });
+
+    quiz.participants.forEach(async (participant) => {
+      const link = `http://localhost:5173/quiz/${quizId}/${participant.id}`;
+      const html = createEmailTemplate({
+        participant_name: participant.name,
+        quiz_administrator: quiz.TestAdministrator.name,
+        quiz_date: quiz.date,
+        quiz_link: link,
+        quiz_name: quiz.title,
+      });
+
+      //send the email template
+      await transporter.sendMail({
+        from: "Enhanced Apptitude Test <ladancbt@gmail.com>", // sender address
+        to: participant.email, // list of receivers
+        subject: "Apptitude Test Invitation", // Subject line
+        //   text: "Hello world?", // plain text body
+        html: html, // html body
+      });
+    });
+
     const response = await prisma.quiz.update({
       where: {
         id: quizId,

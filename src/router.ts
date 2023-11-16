@@ -15,7 +15,8 @@ import {
   deleteQuiz,
   getQuizWithAnswers,
   generateQuestions,
-  getParticipantQuiz, // Added the new handler for retrieving quiz with answers
+  getParticipantQuiz,
+  getStats, // Added the new handler for retrieving quiz with answers
 } from "./handlers/quizHandler";
 import { extractText } from "./handlers/fileHandler";
 
@@ -28,6 +29,7 @@ router.put("/profile/update", updateProfile);
 router.put("/profile/update-password", changePassword);
 
 // Quiz Routes
+router.get("/stats", getStats);
 router.get("/quizzes", getQuizzes); // Get all quizzes for the logged-in test administrator
 router.get("/quizzes/:quizId/answers", getQuizAnswers); // Get answers for a specific quiz
 router.get("/quizzes/:quizId", getQuizWithAnswers); // Get a quiz with its participant answers
