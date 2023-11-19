@@ -200,6 +200,81 @@ export const submitAnswer = async (req, res) => {
   }
 };
 
+//create quiz resutl
+// Create a quiz result for a participant
+export const createQuizResult = async (req, res) => {
+  try {
+    const quizId = parseInt(req.params.quizId);
+    const participantId = parseInt(req.params.participantId);
+
+    // Ensure the participant is associated with the quiz
+    const participant = await prisma.participant.findUnique({
+      where: {
+        id: participantId,
+        quizId: quizId,
+      },
+    });
+
+    if (!participant) {
+      return res
+        .status(404)
+        .json({ error: { message: "Participant not found for the quiz" } });
+    }
+
+    // Check if the quiz result already exists
+    const existingQuizResult = await prisma.quizResult.findFirst({
+      where: {
+        quizId: quizId,
+        participant_id: participantId,
+      },
+    });
+
+    if (existingQuizResult) {
+      return res.status(400).json({
+        error: { message: "Quiz result already exists for the participant" },
+      });
+    }
+
+    // Calculate the total correct answers for the participant
+    const tatalQuestionsAttempted = await prisma.quizAnswer.count({
+      where: {
+        participant_id: participantId,
+        quiz_id: quizId,
+      },
+    });
+
+    // Calculate the total correct answers for the participant
+    const totalCorrectAnswers = await prisma.quizAnswer.count({
+      where: {
+        participant_id: participantId,
+        quiz_id: quizId,
+        is_correct: true,
+      },
+    });
+
+    // Create the quiz result
+    const quizResult = await prisma.quizResult.create({
+      data: {
+        quizId: quizId,
+        participant_id: participantId,
+        correct_answers: totalCorrectAnswers,
+        questions_attempted: tatalQuestionsAttempted,
+      },
+      include: {
+        participant: true,
+        quiz: true,
+      },
+    });
+
+    res
+      .status(200)
+      .json({ data: quizResult, message: "Quiz result created successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: { message: "Internal server error" } });
+  }
+};
+
 // Get all quizzes for the logged-in test administrator
 export const getQuizzes = async (req, res) => {
   try {

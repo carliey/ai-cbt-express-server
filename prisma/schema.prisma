@@ -80,10 +80,12 @@ model QuizAnswer {
 }
 
 model QuizResult {
-  id             Int          @id @default(autoincrement())
-  participant_id Int
-  participant    Participant  @relation(fields: [participant_id], references: [id])
-  quiz           Quiz         @relation(fields: [quizId], references: [id])
-  quizId         Int
-  answers        QuizAnswer[]
+  id                  Int          @id @default(autoincrement())
+  participant_id      Int
+  participant         Participant  @relation(fields: [participant_id], references: [id])
+  quiz                Quiz         @relation(fields: [quizId], references: [id])
+  quizId              Int
+  answers             QuizAnswer[]
+  correct_answers     Int
+  questions_attempted Int
 }
