@@ -200,13 +200,14 @@ export const submitAnswer = async (req, res) => {
   }
 };
 
-//create quiz resutl
 // Create a quiz result for a participant
 export const createQuizResult = async (req, res) => {
   try {
-    const quizId = parseInt(req.params.quizId);
-    const participantId = parseInt(req.params.participantId);
+    const { quizId, participantId } = req.body;
 
+    if (!quizId || !participantId) {
+      return res.status(400).json({ error: { message: "Missing parameters" } });
+    }
     // Ensure the participant is associated with the quiz
     const participant = await prisma.participant.findUnique({
       where: {
@@ -289,6 +290,11 @@ export const getQuizzes = async (req, res) => {
             options: true,
           },
         },
+        results: {
+          include: {
+            participant: true,
+          },
+        },
       },
     });
     res
@@ -358,6 +364,19 @@ export const getParticipantQuiz = async (req, res) => {
   try {
     const parsed_quiz_id = parseInt(quiz_id);
     const parsed_participant_id = parseInt(participant_id);
+
+    const has_submitted = await prisma.quizResult.findFirst({
+      where: {
+        participant_id: parsed_participant_id,
+        quizId: parsed_quiz_id,
+      },
+    });
+
+    if (has_submitted) {
+      return res
+        .status(405)
+        .json({ error: { message: "User has submitted this quiz" } });
+    }
 
     const participant = await prisma.participant.findUnique({
       where: {

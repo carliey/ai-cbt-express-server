@@ -8,7 +8,11 @@ import { createUser, signin } from "./handlers/authHandler";
 import config from "./config";
 import { extractText } from "./handlers/fileHandler";
 import multer from "multer";
-import { getParticipantQuiz, submitAnswer } from "./handlers/quizHandler";
+import {
+  createQuizResult,
+  getParticipantQuiz,
+  submitAnswer,
+} from "./handlers/quizHandler";
 const upload = multer({ dest: "./uploads" });
 
 dotenv.config();
@@ -32,6 +36,7 @@ app.post("/extract-text", upload.single("file"), extractText);
 
 app.get("/quiz", getParticipantQuiz); //get a single quiz for a particular participant
 app.post("/quiz/answer", submitAnswer);
+app.post("/quiz/result", createQuizResult);
 
 app.use("/api", protection, router); //all endpoints inside router are protected
 
