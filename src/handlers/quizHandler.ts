@@ -44,7 +44,7 @@ export const generateQuestions = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    res.json({
+    res.status(400).json({
       error,
       message: "something went wrong, please try again later",
     });
